@@ -1,0 +1,152 @@
+---
+title: "DATA612_Final_Project_Southwood"
+format: html
+editor: visual
+---
+
+## Loading in data and manipulation
+
+```{r}
+# load packages 
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r}
+# load data from https://www.kaggle.com/datasets/warcoder/earthquake-dataset/data
+data <- read_csv("earthquake_1995-2023.csv")
+
+# look at data 
+head(data)
+```
+
+```{r}
+# edit date time data to only have date 
+data$date_only <- as.Date(data$date_time, format = "%d-%m-%Y %H:%M")
+
+# view new column 
+head(data)
+```
+
+## Preliminary plots
+
+```{r}
+# exploring depth and magnitude 
+ggplot(data, aes(x = depth, y = magnitude, color = alert )) + geom_point()
+```
+
+```{r}
+# exploring gap, magType, and date 
+ggplot(data, aes(x = date_only, y = gap, color = magType)) + geom_point()
+```
+
+## Final plots
+
+Scatter Plot: Magnitude vs. Significance, colored by alert
+
+```{r}
+
+# drop rows with NA in alert column 
+data_dropNA_alert <- data |> drop_na(alert)
+
+# plot scatterplot  
+ggplot(data_dropNA_alert, aes(x = magnitude, y = sig, fill = alert)) + 
+  geom_point(shape = 21, color = "black", size = 3, stroke = 0.5) +
+  scale_fill_manual(values = c("green", "yellow", "orange", "red")) +
+  labs(title = "Earthquake Magnitude vs Significance",
+       x = "Magnitude",
+       y = "Significance",
+       fill = "Alert") +
+  theme_bw()
+
+```
+
+ Boxplot: Magnitude by alert level
+
+```{r}
+
+# plot boxplot 
+ggplot(data_dropNA_alert, aes(x = alert, y = magnitude, fill = alert)) +
+  geom_boxplot() +
+  scale_fill_manual(values = c("green", "yellow", "orange", "red")) +
+  labs(title = "Earthquake Magnitude by Alert Level",
+       x = "Alert",
+       y = "Magnitude") + 
+  theme_bw() + 
+  theme(legend.position = "none")
+
+```
+
+ Histogram: Magnitude distribution over time (faceted by 5-year period) and counts
+
+```{r}
+
+# add column that sorts dates into five year periods 
+data<- data |> 
+      mutate(five_year_period = factor(floor(as.numeric(format(date_only, "%Y")) / 5) * 5))
+
+# plot histogram 
+ggplot(data, aes(x = magnitude)) +
+  geom_histogram(binwidth = 0.5, fill = "pink", color = "black") +
+  facet_wrap(~ five_year_period) +
+  labs(title = "Magnitude Distribution by 5-Year Period",
+       x = "Magnitude",
+       y = "Frequency") +
+  theme_bw()
+
+```
+
+```{r}
+
+# count number of earthqaukes in each five year period 
+earthquake_counts <- data |>
+  group_by(five_year_period) |>
+  summarise(n_earthquakes = n()) |>
+  arrange(five_year_period)
+
+# view counts 
+earthquake_counts
+```
+
+ Histogram: Magnitude distribution by Tsunami and counts
+
+```{r}
+
+# plot histogram 
+ggplot(data, aes(x = magnitude, fill = factor(tsunami))) +
+  geom_histogram(binwidth = 0.5, color = "black") +
+  facet_wrap(~ factor(tsunami, labels = c("Land", "Oceanic"))) +
+  scale_fill_manual(values = c("grey", "lightblue")) +
+  labs(title = "Oceanic vs Land Earthquake Distribution",
+       x = "Magnitude",
+       y = "Frequency") +
+  theme_bw() + 
+  theme(legend.position = "none")
+
+
+```
+
+```{r}
+
+# count number of earthqaukes on land and in the ocean  
+tsunami_counts <- data |>
+  group_by(tsunami) |>
+  summarise(n_earthquakes = n()) |>
+  arrange(tsunami)
+
+# view counts 
+tsunami_counts
+```
+
+ Boxplot: Significance by alert level (NOT included in final presentation)
+
+```{r}
+
+# plot box plot by significance 
+ggplot(data_dropNA_alert, aes(x = alert, y = sig, fill = alert)) + geom_boxplot() + scale_fill_manual(values = c("green", "yellow", "orange", "red")) +
+  labs(title = "Earthquake Significance by Alert Level",
+       x = "Alert",
+       y = "Significance",
+       color = "Alert") +
+ theme_bw()
+```
